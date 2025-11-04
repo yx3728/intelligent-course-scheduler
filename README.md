@@ -125,7 +125,7 @@ The seed script includes:
 - [ ] Add preference-based scoring (time windows, campus preferences)
 - [ ] Implement multithreaded search with ExecutorService
 - [ ] Add JavaFX calendar view with drag-drop
-- [ ] Expand seed data to 10,000+ combinations
+~- [ ] Expand seed data to 10,000+ combinations~
 - [ ] Add Spotless code formatting
 - [ ] Integration tests for REST endpoints
 - [ ] Performance benchmarks (JMH)
