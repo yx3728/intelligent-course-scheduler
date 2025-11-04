@@ -1,0 +1,13 @@
+com\ics\server\mapper\EntityMapper.class
+com\ics\server\entity\BuildingEntity.class
+com\ics\server\repo\CourseRepository.class
+com\ics\server\repo\EdgeRepository.class
+com\ics\server\entity\SectionMeetingEntity.class
+com\ics\server\repo\SectionRepository.class
+com\ics\server\entity\CourseEntity.class
+com\ics\server\entity\EdgeEntity.class
+com\ics\server\ServerApplication.class
+com\ics\server\api\ScheduleController.class
+com\ics\server\repo\BuildingRepository.class
+com\ics\server\service\ScheduleService.class
+com\ics\server\entity\SectionEntity.class
