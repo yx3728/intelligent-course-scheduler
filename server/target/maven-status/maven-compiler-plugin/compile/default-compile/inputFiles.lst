@@ -1,13 +1,13 @@
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\BuildingEntity.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\SectionEntity.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\service\ScheduleService.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\repo\SectionRepository.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\api\ScheduleController.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\CourseEntity.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\EdgeEntity.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\SectionMeetingEntity.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\repo\CourseRepository.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\repo\BuildingRepository.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\mapper\EntityMapper.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\repo\EdgeRepository.java
-D:\SomewhereToWork\intelligent-course-scheduler\server\src\main\java\com\ics\server\ServerApplication.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\SectionEntity.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\ServerApplication.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\repo\CourseRepository.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\repo\BuildingRepository.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\EdgeEntity.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\service\ScheduleService.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\repo\SectionRepository.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\api\ScheduleController.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\BuildingEntity.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\mapper\EntityMapper.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\CourseEntity.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\entity\SectionMeetingEntity.java
+D:\SomewhereToWork\Java\Final Project\intelligent-course-scheduler\server\src\main\java\com\ics\server\repo\EdgeRepository.java
