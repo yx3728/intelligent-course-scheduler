@@ -1,2 +1,3 @@
-com\ics\client\api\ApiClient.class
-com\ics\client\ClientApp.class
+com/ics/client/api/ApiClient.class
+com/ics/client/ClientApp.class
+com/ics/client/ClientApp$1.class

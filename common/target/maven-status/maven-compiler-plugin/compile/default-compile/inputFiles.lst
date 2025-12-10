@@ -1,8 +1,8 @@
-D:\SomewhereToWork\intelligent-course-scheduler\common\src\main\java\com\ics\common\dto\Course.java
-D:\SomewhereToWork\intelligent-course-scheduler\common\src\main\java\com\ics\common\dto\GenerateRequest.java
-D:\SomewhereToWork\intelligent-course-scheduler\common\src\main\java\com\ics\common\dto\Building.java
-D:\SomewhereToWork\intelligent-course-scheduler\common\src\main\java\com\ics\common\dto\Edge.java
-D:\SomewhereToWork\intelligent-course-scheduler\common\src\main\java\com\ics\common\dto\ScheduleResult.java
-D:\SomewhereToWork\intelligent-course-scheduler\common\src\main\java\com\ics\common\dto\Section.java
-D:\SomewhereToWork\intelligent-course-scheduler\common\src\main\java\com\ics\common\dto\MeetingTime.java
-D:\SomewhereToWork\intelligent-course-scheduler\common\src\main\java\com\ics\common\dto\UserPrefs.java
+/Users/christinaxu/IdeaProjects/intelligent-course-scheduler/common/src/main/java/com/ics/common/dto/GenerateRequest.java
+/Users/christinaxu/IdeaProjects/intelligent-course-scheduler/common/src/main/java/com/ics/common/dto/Building.java
+/Users/christinaxu/IdeaProjects/intelligent-course-scheduler/common/src/main/java/com/ics/common/dto/Edge.java
+/Users/christinaxu/IdeaProjects/intelligent-course-scheduler/common/src/main/java/com/ics/common/dto/UserPrefs.java
+/Users/christinaxu/IdeaProjects/intelligent-course-scheduler/common/src/main/java/com/ics/common/dto/ScheduleResult.java
+/Users/christinaxu/IdeaProjects/intelligent-course-scheduler/common/src/main/java/com/ics/common/dto/Course.java
+/Users/christinaxu/IdeaProjects/intelligent-course-scheduler/common/src/main/java/com/ics/common/dto/Section.java
+/Users/christinaxu/IdeaProjects/intelligent-course-scheduler/common/src/main/java/com/ics/common/dto/MeetingTime.java
