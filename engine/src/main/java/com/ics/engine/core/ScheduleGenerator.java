@@ -45,13 +45,12 @@ public class ScheduleGenerator {
                   return threadLocalResults;
               })
               .flatMap(List::stream)
+              .sorted((s1, s2) -> {
+                  double score1 = calculateScore(s1, prefs);
+                  double score2 = calculateScore(s2, prefs);
+                  return Double.compare(score2, score1);
+              })
               .collect(Collectors.toList());
-
-      allResults.sort((s1, s2) -> {
-          double score1 = calculateScore(s1, prefs);
-          double score2 = calculateScore(s2, prefs);
-          return Double.compare(score2, score1);
-      });
 
       return allResults.size() > topK ? allResults.subList(0, topK) : allResults;
   }
