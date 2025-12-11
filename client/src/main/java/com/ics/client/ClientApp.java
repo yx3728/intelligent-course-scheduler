@@ -295,7 +295,7 @@ public class ClientApp extends Application {
             }));
         });
 
-        Scene scene = new Scene(root, 1500, 800);
+        Scene scene = new Scene(root, 1200, 800);
         try {
             var cssUrl = getClass().getResource("/styles.css");
             if (cssUrl != null) {
