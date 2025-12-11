@@ -25,6 +25,11 @@ import javafx.scene.text.Text;
 import java.time.DayOfWeek;
 import javafx.stage.Popup;
 
+import com.ics.client.util.IcsUtil;
+import javafx.stage.FileChooser;
+import java.io.File;
+import java.nio.file.Files;
+
 public class ClientApp extends Application {
     private final ApiClient apiClient = new ApiClient("http://localhost:8080");
     //private TextArea resultArea;
@@ -35,6 +40,8 @@ public class ClientApp extends Application {
     private ProgressIndicator progressIndicator;
     private Button generateButton;
 
+    private List<ScheduleResult> currentResults = new ArrayList<>();
+    private boolean[] currentVisibility;
 
     private final String[] OPTION_COLORS = {
             "#6366f1", // Indigo
@@ -239,13 +246,52 @@ public class ClientApp extends Application {
         calendarScroll.setFitToWidth(true);
         calendarScroll.setStyle("-fx-background-color: white;");
 
+        Button exportAllBtn = new Button("Export Selected Schedules (.ics)");
+        exportAllBtn.setStyle("-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-size: 14px;");
+
+        HBox bottomBar = new HBox(10, exportAllBtn);
+        bottomBar.setPadding(new Insets(10, 20, 10, 20));
+        bottomBar.setAlignment(Pos.CENTER_LEFT);
+        bottomBar.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-width: 1 0 0 0;");
+
         BorderPane root = new BorderPane();
 
         VBox topContainer = new VBox(appTitle, inputBar, optionsArea);
-        topContainer.setStyle("-fx-background-color: white;"); // 确保背景是白的
+        topContainer.setStyle("-fx-background-color: white;");
 
         root.setTop(topContainer);
         root.setCenter(calendarScroll);
+        root.setBottom(bottomBar);
+
+        exportAllBtn.setOnAction(e -> {
+            if (currentResults.isEmpty() || currentVisibility == null) {
+                statusLabel.setText("No schedules available to export.");
+                return;
+            }
+
+            int exportedCount = 0;
+            boolean cancelled = false;
+
+            for (int i = 0; i < currentResults.size(); i++) {
+                if (i < currentVisibility.length && currentVisibility[i]) {
+                    boolean success = exportSchedule(currentResults.get(i).sections(), i + 1);
+                    if (success) {
+                        exportedCount++;
+                    } else {
+                        cancelled = true;
+                        break;
+                    }
+                }
+            }
+
+            if (cancelled) {
+                statusLabel.setText("Export canceled after " + exportedCount + " file(s) saved.");
+            } else if (exportedCount > 0) {
+                statusLabel.setText("Successfully exported " + exportedCount + " selected option(s).");
+            } else {
+                statusLabel.setText("Please select at least one schedule option to export.");
+            }
+        });
 
         generateButton.setOnAction(e -> {
             String courseCodesStr = courseField.getText().trim();
@@ -344,8 +390,11 @@ public class ClientApp extends Application {
         }
         statusLabel.setText("Found " + results.size() + " Schedule Options:");
 
-        boolean[] visibility = new boolean[results.size()];
-        if (!results.isEmpty()) visibility[0] = true;
+        this.currentResults = results;
+        this.currentVisibility = new boolean[results.size()];
+
+        if (!results.isEmpty()) this.currentVisibility[0] = true;
+        boolean[] visibility = this.currentVisibility;
 
         for (int i = 0; i < results.size(); i++) {
             final int index = i;
@@ -370,7 +419,7 @@ public class ClientApp extends Application {
             title.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #334155;");
 
             Label score = new Label("Score: " + String.format("%.1f", results.get(i).score()));
-            score.setStyle("-fx-text-fill: #64748b; -fx-font-size: 11px;"); // 灰色副标题
+            score.setStyle("-fx-text-fill: #64748b; -fx-font-size: 11px;");
 
             textBox.getChildren().addAll(title, score);
 
@@ -573,6 +622,32 @@ public class ClientApp extends Application {
             case FRIDAY -> 5;
             default -> -1;
         };
+    }
+
+
+    private boolean exportSchedule(List<Section> schedule, int optionIndex) {
+        String icsContent = IcsUtil.generateIcsContent(schedule);
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Schedule Option " + optionIndex + " to Calendar");
+
+        String filename = "schedule_option_" + optionIndex + ".ics";
+
+        fileChooser.setInitialFileName(filename);
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("iCalendar File", "*.ics"));
+
+        File file = fileChooser.showSaveDialog(null);
+
+        if (file != null) {
+            try {
+                Files.writeString(file.toPath(), icsContent);
+                return true;
+            } catch (Exception ex) {
+                System.err.println("Failed to save file: " + ex.getMessage());
+                return false;
+            }
+        }
+        return false;
     }
 
     @SuppressWarnings("unused")
