@@ -6,7 +6,8 @@ public record UserPrefs(
     Integer minCredits,
     Integer maxCredits,
     List<MeetingTime> bannedWindows,
-    Integer maxWalkPerGap
+    Integer maxWalkPerGap,
+    Integer preferredStartTime
 ) {}
 
 
