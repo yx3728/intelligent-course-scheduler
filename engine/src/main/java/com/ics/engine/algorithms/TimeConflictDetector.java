@@ -18,6 +18,20 @@ public class TimeConflictDetector {
     return new Interval(LocalTime.parse(t.start()), LocalTime.parse(t.end()));
   }
 
+    public static boolean hasOverlap(String start1Str, String end1Str, String start2Str, String end2Str) {
+        try {
+            LocalTime start1 = LocalTime.parse(start1Str);
+            LocalTime end1 = LocalTime.parse(end1Str);
+            LocalTime start2 = LocalTime.parse(start2Str);
+            LocalTime end2 = LocalTime.parse(end2Str);
+
+            return start1.isBefore(end2) && end1.isAfter(start2);
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
   public static boolean hasConflict(List<Section> sections) {
     Map<String, List<Interval>> byDay = new HashMap<>();
     
