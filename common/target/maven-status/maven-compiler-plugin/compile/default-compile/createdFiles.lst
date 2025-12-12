@@ -1,8 +1,0 @@
-com/ics/common/dto/Course.class
-com/ics/common/dto/GenerateRequest.class
-com/ics/common/dto/MeetingTime.class
-com/ics/common/dto/UserPrefs.class
-com/ics/common/dto/Building.class
-com/ics/common/dto/Edge.class
-com/ics/common/dto/ScheduleResult.class
-com/ics/common/dto/Section.class

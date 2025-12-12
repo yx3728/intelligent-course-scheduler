@@ -6,6 +6,7 @@ import java.util.*;
 import com.ics.common.dto.UserPrefs;
 
 import java.util.stream.Collectors;
+import com.ics.common.dto.MeetingTime;
 
 public class ScheduleGenerator {
   private final ScheduleScorer scorer = new ScheduleScorer();
@@ -26,6 +27,8 @@ public class ScheduleGenerator {
   public List<List<Section>> generate(List<List<Section>> byCourse, UserPrefs prefs, int topK) {
       if (byCourse.isEmpty()) return new ArrayList<>();
 
+      List<MeetingTime> globalExclusions = prefs.excludedMeetingTimes() != null ? prefs.excludedMeetingTimes() : List.of();
+
       List<Section> firstCourseSections = byCourse.get(0);
 
       System.out.println("DEBUG: Parallel Stream Processing" + firstCourseSections.size() + " original branches");
@@ -35,13 +38,16 @@ public class ScheduleGenerator {
               .map(firstSection -> {
                   System.out.println("DEBUG: thread [" + Thread.currentThread().getName() + "] searching...");
 
+                  if (conflictsWithExclusions(firstSection, globalExclusions)) {
+                      return List.<List<Section>>of();
+                  }
+
                   List<List<Section>> threadLocalResults = new ArrayList<>();
 
                   List<Section> currentPath = new ArrayList<>();
                   currentPath.add(firstSection);
 
-                  backtrack(byCourse, 1, currentPath, threadLocalResults, topK * 2);
-
+                  backtrack(byCourse, 1, currentPath, threadLocalResults, topK * 2, globalExclusions);
                   return threadLocalResults;
               })
               .flatMap(List::stream)
@@ -56,7 +62,7 @@ public class ScheduleGenerator {
   }
 
     private double calculateScore(List<Section> schedule, UserPrefs prefs) {
-        double baseScore = scorer.score(schedule); // 原有的打分逻辑
+        double baseScore = scorer.score(schedule);
 
         if (prefs != null && prefs.preferredStartTime() != null) {
             int minHour = prefs.preferredStartTime();
@@ -121,7 +127,8 @@ public class ScheduleGenerator {
             int idx,
             List<Section> cur,
             List<List<Section>> out,
-            int limit
+            int limit,
+            List<MeetingTime> globalExclusions
     ) {
 
         if (out.size() >= limit) return;
@@ -132,14 +139,44 @@ public class ScheduleGenerator {
         }
 
         for (Section s : byCourse.get(idx)) {
+            if (conflictsWithExclusions(s, globalExclusions)) {
+                continue; // 如果冲突，跳过这个 Section
+            }
             cur.add(s);
             if (!TimeConflictDetector.hasConflict(cur)) {
-                backtrack(byCourse, idx + 1, cur, out, limit);
+                backtrack(byCourse, idx + 1, cur, out, limit, globalExclusions);
             }
             cur.remove(cur.size() - 1);
         }
     }
+
+    private boolean conflictsWithExclusions(Section section, List<MeetingTime> excluded) {
+        if (excluded == null || excluded.isEmpty()) {
+            return false;
+        }
+
+
+        for (var secMt : section.meetingTimes()) {
+
+            for (var excMt : excluded) {
+
+
+                if (secMt.day().equalsIgnoreCase(excMt.day())) {
+
+
+                    if (TimeConflictDetector.hasOverlap(
+                            secMt.start(), secMt.end(),
+                            excMt.start(), excMt.end()
+                    )) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }
+
 
 
 

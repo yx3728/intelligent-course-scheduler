@@ -11,6 +11,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,6 +30,7 @@ import com.ics.client.util.IcsUtil;
 import javafx.stage.FileChooser;
 import java.io.File;
 import java.nio.file.Files;
+import java.time.LocalTime;
 
 public class ClientApp extends Application {
     private final ApiClient apiClient = new ApiClient("http://localhost:8080");
@@ -40,8 +42,20 @@ public class ClientApp extends Application {
     private ProgressIndicator progressIndicator;
     private Button generateButton;
 
+    private final Spinner<Integer> minCreditsSpinner = new Spinner<>(0, 30, 8);
+    private final Spinner<Integer> maxCreditsSpinner = new Spinner<>(0, 30, 18);
+    private final Spinner<Integer> topKSpinner = new Spinner<>(1, 20, 5);
+    private final ComboBox<String> startTimeBox = new ComboBox<>();
+
     private List<ScheduleResult> currentResults = new ArrayList<>();
     private boolean[] currentVisibility;
+
+    private final List<MeetingTime> permanentExclusions = new ArrayList<>();
+    private Label exclusionSummaryLabel;
+
+    private int lastStartMinutes = 390;
+    private int lastEndMinutes = 1350;
+    private final boolean[] lastDaySelections = new boolean[6];
 
     private final String[] OPTION_COLORS = {
             "#6366f1", // Indigo
@@ -176,28 +190,41 @@ public class ClientApp extends Application {
         primaryStage.setTitle("Intelligent Course Scheduler");
 
         Label appTitle = new Label("Intelligent Course Scheduler");
-        appTitle.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-padding: 20 0 5 20;");
+        appTitle.setStyle(
+                "-fx-font-size: 26px;" +
+                        "-fx-font-weight: 700;" +
+                        "-fx-text-fill: #111827;" +
+                        "-fx-padding: 20 20 6 20;"
+        );
 
-        HBox inputBar = new HBox(10);
-        inputBar.setPadding(new Insets(15));
-        inputBar.setAlignment(Pos.CENTER_LEFT);
-        inputBar.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-width: 0 0 1 0;");
+        VBox inputBar = new VBox(12);
+        inputBar.setPadding(new Insets(16, 20, 16, 20));
+        inputBar.setStyle("-fx-background-color: white; -fx-border-color: #e5e7eb; -fx-border-width: 0 0 1 0;");
 
-        Label courseLabel = new Label("Courses:");
+        Label courseLabel = new Label("Courses");
         TextField courseField = new TextField("CS101, MATH201");
         courseField.setPromptText("e.g. CS101, MATH201");
 
-        Spinner<Integer> minCreditsSpinner = new Spinner<>(0, 30, 8);
-        Spinner<Integer> maxCreditsSpinner = new Spinner<>(0, 30, 18);
-        Spinner<Integer> topKSpinner = new Spinner<>(1, 20, 5);
         minCreditsSpinner.setPrefWidth(100);
         maxCreditsSpinner.setPrefWidth(100);
         topKSpinner.setPrefWidth(100);
 
-        ComboBox<String> startTimeBox = new ComboBox<>();
         startTimeBox.getItems().addAll("Any Time", "After 9am", "After 10am", "After 11am", "After 12pm");
         startTimeBox.setPromptText("Select...");
         startTimeBox.setPrefWidth(110);
+
+        // 👇👇👇【修改 2A】新增：Filter 按钮和 Summary Label 👇👇👇
+        Button excludeButton = new Button("Add days/times");
+        excludeButton.getStyleClass().add("secondary-button");
+        excludeButton.setOnAction(e -> showExclusionDialog()); // 触发模态窗口
+
+        // 用于显示当前排除规则的摘要标签
+        exclusionSummaryLabel = new Label("No Exclusions Set");
+        exclusionSummaryLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: gray;");
+
+        VBox excludeBox = new VBox(5, excludeButton, exclusionSummaryLabel);
+        excludeBox.setAlignment(Pos.CENTER_LEFT);
+        // ------------------------------------------
 
         generateButton = new Button("Generate Schedules");
         generateButton.getStyleClass().add("primary-button");
@@ -206,14 +233,73 @@ public class ClientApp extends Application {
         progressIndicator.setVisible(false);
         progressIndicator.setPrefSize(20, 20);
 
-        inputBar.getChildren().addAll(
-                courseLabel, courseField,
-                new Label("Min Credits:"), minCreditsSpinner,
-                new Label("Max Credits:"), maxCreditsSpinner,
-                new Label("Top K:"), topKSpinner,
-                new Label("Start:"), startTimeBox,
-                generateButton, progressIndicator
+        Label minLabel = new Label("Min Credits");
+        Label maxLabel = new Label("Max Credits");
+        Label topKLabel = new Label("Top K");
+        Label startLabel = new Label("Start Time");
+        Label exclusionsLabel = new Label("Exclusions");
+
+        String labelStyle = "-fx-text-fill: #374151; -fx-font-size: 12px;";
+
+        for (Label lbl : new Label[]{courseLabel, minLabel, maxLabel, topKLabel, startLabel, exclusionsLabel}) {
+            lbl.setStyle(labelStyle);
+            lbl.setMinWidth(Region.USE_PREF_SIZE);
+            lbl.setMaxWidth(Region.USE_PREF_SIZE);
+        }
+
+        courseField.setPrefWidth(260);
+        minCreditsSpinner.setPrefWidth(80);
+        maxCreditsSpinner.setPrefWidth(80);
+        topKSpinner.setPrefWidth(80);
+        startTimeBox.setPrefWidth(130);
+
+        courseField.setPrefHeight(32);
+        minCreditsSpinner.setPrefHeight(32);
+        maxCreditsSpinner.setPrefHeight(32);
+        topKSpinner.setPrefHeight(32);
+        startTimeBox.setPrefHeight(32);
+
+// ------- SINGLE ROW: Courses | Min Credits | Max Credits | Top K | Start Time -------
+        HBox row1 = new HBox(24);
+        row1.setAlignment(Pos.CENTER_LEFT);
+
+        HBox coursesBox = new HBox(8, courseLabel, courseField);
+        HBox minBox     = new HBox(8, minLabel,    minCreditsSpinner);
+        HBox maxBox     = new HBox(8, maxLabel,    maxCreditsSpinner);
+        HBox topKBox    = new HBox(8, topKLabel,   topKSpinner);
+        HBox startBox   = new HBox(8, startLabel,  startTimeBox);
+
+        coursesBox.setAlignment(Pos.CENTER_LEFT);
+        minBox.setAlignment(Pos.CENTER_LEFT);
+        maxBox.setAlignment(Pos.CENTER_LEFT);
+        topKBox.setAlignment(Pos.CENTER_LEFT);
+        startBox.setAlignment(Pos.CENTER_LEFT);
+
+        row1.getChildren().setAll(
+                coursesBox,
+                minBox,
+                maxBox,
+                topKBox,
+                startBox
         );
+
+        HBox row3 = new HBox(16);
+        row3.setAlignment(Pos.CENTER_LEFT);
+
+        VBox exclusionInfoBox = new VBox(4, exclusionsLabel, exclusionSummaryLabel);
+
+        HBox leftExclusionBox = new HBox(10, exclusionInfoBox, excludeBox);
+        leftExclusionBox.setAlignment(Pos.CENTER_LEFT);
+
+        HBox rightGenerateBox = new HBox(8, generateButton, progressIndicator);
+        rightGenerateBox.setAlignment(Pos.CENTER_RIGHT);
+        HBox.setHgrow(rightGenerateBox, Priority.ALWAYS);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        row3.getChildren().addAll(leftExclusionBox, spacer, rightGenerateBox);
+
+        inputBar.getChildren().setAll(row1, row3);
 
         VBox optionsArea = new VBox(10);
         optionsArea.setPadding(new Insets(10, 20, 10, 20));
@@ -316,7 +402,8 @@ public class ClientApp extends Application {
                     maxCreditsSpinner.getValue(),
                     List.of(),
                     null,
-                    preferredStartHour
+                    preferredStartHour,
+                    permanentExclusions
             );
             GenerateRequest request = new GenerateRequest(courseCodes, prefs, topKSpinner.getValue());
 
@@ -393,7 +480,7 @@ public class ClientApp extends Application {
         this.currentResults = results;
         this.currentVisibility = new boolean[results.size()];
 
-        if (!results.isEmpty()) this.currentVisibility[0] = true;
+        //if (!results.isEmpty()) this.currentVisibility[0] = true;
         boolean[] visibility = this.currentVisibility;
 
         for (int i = 0; i < results.size(); i++) {
@@ -482,7 +569,12 @@ public class ClientApp extends Application {
                         if (row < 1) row = 1;
 
                         VBox block = new VBox(2);
-                        block.setStyle("-fx-background-color: " + color + "; -fx-padding: 3px; -fx-background-radius: 4px; -fx-cursor: hand;");
+                        block.setStyle(
+                                "-fx-background-color: " + color + "CC;" + // CC = 80% 不透明
+                                        "-fx-padding: 4px;" +
+                                        "-fx-background-radius: 6px;" +
+                                        "-fx-cursor: hand;"
+                        );
                         HBox.setHgrow(block, Priority.ALWAYS);
                         block.setMaxWidth(Double.MAX_VALUE);
 
@@ -648,6 +740,235 @@ public class ClientApp extends Application {
             }
         }
         return false;
+    }
+
+
+
+    private void showExclusionDialog() {
+        Dialog<List<MeetingTime>> dialog = new Dialog<>();
+
+        dialog.setTitle("Day & Time Exclusions");
+        dialog.setHeaderText(null);
+        dialog.setGraphic(null);
+
+        dialog.getDialogPane().getButtonTypes().setAll(ButtonType.CANCEL);
+
+        Button hiddenCancel = (Button) dialog.getDialogPane().lookupButton(ButtonType.CANCEL);
+        if (hiddenCancel != null) {
+            hiddenCancel.setVisible(false);
+            hiddenCancel.setManaged(false);
+        }
+
+        dialog.getDialogPane().setPrefWidth(520);
+        dialog.getDialogPane().setStyle(
+                "-fx-background-color: transparent;" +
+                        "-fx-padding: 0;"
+        );
+
+        String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+        CheckBox[] dayChecks = new CheckBox[days.length];
+
+        HBox dayRow = new HBox(18);
+        dayRow.setAlignment(Pos.CENTER_LEFT);
+
+        for (int i = 0; i < days.length; i++) {
+            dayChecks[i] = new CheckBox(days[i]);
+            if (i < lastDaySelections.length) {
+                dayChecks[i].setSelected(lastDaySelections[i]);
+            }
+            dayRow.getChildren().add(dayChecks[i]);
+        }
+
+        int finalMIN_TIME_MINUTES = 390;
+        int finalMAX_TIME_MINUTES = 1350;
+
+        int initialStart = Math.max(finalMIN_TIME_MINUTES, Math.min(finalMAX_TIME_MINUTES, lastStartMinutes));
+        int initialEnd   = Math.max(finalMIN_TIME_MINUTES, Math.min(finalMAX_TIME_MINUTES, lastEndMinutes));
+
+        Slider startSlider = new Slider(finalMIN_TIME_MINUTES, finalMAX_TIME_MINUTES, initialStart);
+        Slider endSlider   = new Slider(finalMIN_TIME_MINUTES, finalMAX_TIME_MINUTES, initialEnd);
+
+        startSlider.getStyleClass().add("range-slider-main");
+        endSlider.getStyleClass().add("range-slider-bg");
+
+        for (Slider s : new Slider[]{startSlider, endSlider}) {
+            s.setShowTickMarks(false);
+            s.setShowTickLabels(false);
+            s.setBlockIncrement(15);
+            s.setMajorTickUnit(60);
+            s.setMinWidth(440);
+        }
+
+        Label timeRangeLabel = new Label();
+        timeRangeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #111827; -fx-font-size: 13px;");
+        timeRangeLabel.setAlignment(Pos.CENTER);
+
+        java.util.function.IntFunction<String> formatTime = minutes -> {
+            int hour24 = minutes / 60;
+            int minute = minutes % 60;
+            String ampm = (hour24 < 12) ? "AM" : "PM";
+
+            int hour12 = hour24;
+            if (hour12 == 0) hour12 = 12;
+            else if (hour12 > 12) hour12 -= 12;
+
+            return String.format("%d:%02d %s", hour12, minute, ampm);
+        };
+
+        Runnable updateLabel = () -> {
+            if (startSlider.getValue() > endSlider.getValue()) {
+                startSlider.setValue(endSlider.getValue());
+            }
+            int startMin = (int) startSlider.getValue();
+            int endMin   = (int) endSlider.getValue();
+            String startStr = formatTime.apply(startMin);
+            String endStr   = formatTime.apply(endMin);
+            timeRangeLabel.setText(startStr + " -- " + endStr);
+        };
+
+        startSlider.valueProperty().addListener((obs, o, n) -> updateLabel.run());
+        endSlider.valueProperty().addListener((obs, o, n) -> updateLabel.run());
+        updateLabel.run();
+
+        VBox sliderBoxInner = new VBox(10, timeRangeLabel, startSlider, endSlider);
+        sliderBoxInner.setAlignment(Pos.CENTER_LEFT);
+
+        VBox sliderCard = new VBox(sliderBoxInner);
+        sliderCard.setPadding(new Insets(12, 14, 14, 14));
+        sliderCard.setStyle(
+                "-fx-background-color: #f9fafb;" +
+                        "-fx-background-radius: 10;" +
+                        "-fx-border-radius: 10;" +
+                        "-fx-border-color: #e5e7eb;"
+        );
+
+        Button clearButton = new Button("Clear");
+        Button cancelButton = new Button("Cancel");
+        Button addButton = new Button("Add");
+
+        clearButton.setStyle(
+                "-fx-background-color: white;" +
+                        "-fx-border-color: #d1d5db;" +
+                        "-fx-text-fill: #374151;" +
+                        "-fx-padding: 6 18 6 18;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-border-radius: 999;"
+        );
+
+        cancelButton.setStyle(
+                "-fx-background-color: transparent;" +
+                        "-fx-text-fill: #4b5563;" +
+                        "-fx-padding: 6 18 6 18;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-border-radius: 999;"
+        );
+
+        addButton.setStyle(
+                "-fx-background-color: #2563eb;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-padding: 6 22 6 22;" +
+                        "-fx-background-radius: 999;" +
+                        "-fx-border-radius: 999;"
+        );
+
+        addButton.setDefaultButton(true);
+        cancelButton.setCancelButton(true);
+
+        HBox buttonRow = new HBox(8, clearButton, cancelButton, addButton);
+        buttonRow.setAlignment(Pos.CENTER_RIGHT);
+        buttonRow.setPadding(new Insets(6, 0, 0, 0));
+
+        VBox card = new VBox(16,
+                new Label("Exclude sections that meet on..."),
+                dayRow,
+                sliderCard,
+                buttonRow
+        );
+        card.getChildren().get(0).setStyle(
+                "-fx-font-size: 15px;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-text-fill: #111827;"
+        );
+
+        card.setPadding(new Insets(18, 20, 14, 20));
+        card.setStyle(
+                "-fx-background-color: white;" +
+                        "-fx-background-radius: 12;" +
+                        "-fx-border-radius: 12;" +
+                        "-fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.18), 16, 0, 0, 4);"
+        );
+
+        StackPane rootPane = new StackPane(card);
+        rootPane.setPadding(new Insets(8));
+
+        dialog.getDialogPane().setContent(rootPane);
+
+        clearButton.setOnAction(ev -> {
+            permanentExclusions.clear();
+            updateExclusionSummary();
+
+            lastStartMinutes = finalMIN_TIME_MINUTES;
+            lastEndMinutes   = finalMAX_TIME_MINUTES;
+            Arrays.fill(lastDaySelections, false);
+            startSlider.setValue(finalMIN_TIME_MINUTES);
+            endSlider.setValue(finalMAX_TIME_MINUTES);
+            for (CheckBox cb : dayChecks) {
+                cb.setSelected(false);
+            }
+            updateLabel.run();
+        });
+
+        cancelButton.setOnAction(ev -> {
+            dialog.setResult(null);
+            dialog.close();
+        });
+
+        addButton.setOnAction(ev -> {
+            List<MeetingTime> newExclusions = new ArrayList<>();
+            String[] dayCodes = {"MON", "TUE", "WED", "THU", "FRI", "SAT"};
+
+            int startMinutes = (int) startSlider.getValue();
+            int endMinutes   = (int) endSlider.getValue();
+
+            LocalTime startLocal = LocalTime.of(startMinutes / 60, startMinutes % 60);
+            LocalTime endLocal   = LocalTime.of(endMinutes / 60, endMinutes % 60);
+
+            String startTime = startLocal.toString();
+            String endTime   = endLocal.toString();
+
+            lastStartMinutes = startMinutes;
+            lastEndMinutes   = endMinutes;
+
+            for (int i = 0; i < dayChecks.length; i++) {
+                boolean selected = dayChecks[i].isSelected();
+                if (i < lastDaySelections.length) {
+                    lastDaySelections[i] = selected;
+                }
+                if (selected) {
+                    newExclusions.add(new MeetingTime(dayCodes[i], startTime, endTime));
+                }
+            }
+
+            dialog.setResult(newExclusions);
+            dialog.close();
+        });
+
+        dialog.showAndWait().ifPresent(newExclusions -> {
+            if (!newExclusions.isEmpty()) {
+                permanentExclusions.addAll(newExclusions);
+                updateExclusionSummary();
+            }
+        });
+    }
+
+    private void updateExclusionSummary() {
+        if (permanentExclusions.isEmpty()) {
+            exclusionSummaryLabel.setText("No Exclusions Set");
+            return;
+        }
+
+        exclusionSummaryLabel.setText(permanentExclusions.size() + " Exclusion Rule(s) Set");
     }
 
     @SuppressWarnings("unused")
