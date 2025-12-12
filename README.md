@@ -2,14 +2,47 @@
 
 A production-grade course scheduling system that generates optimal student schedules from 10,000+ course/section combinations using constraint-based optimization, Dijkstra pathfinding, and multithreaded search.
 
+<p align="center">
+  <img src="/docs/images/UI.png" alt="Intelligent Course Scheduler Main Interface" width="100%">
+</p>
+
 ## Features
 
-- **Constraint-Based Scheduling**: Detects time conflicts and validates hard constraints
+- **Constraint-Based Scheduling**:
+  - **Hard Constraints**: Detects time conflicts and strictly adheres to user-defined exclusion periods (e.g., "No classes on Fridays").
+  - **Soft Constraints**: Optimizes schedules based on user preferences (e.g., "Start after 11am") using a weighted scoring algorithm.
+- **Native iCalendar Export**: Generates RFC 5545 (`.ics`) files for seamless integration with Apple Calendar, Google Calendar, and Outlook.
 - **Pathfinding**: Uses Dijkstra's algorithm to optimize travel time between buildings
 - **REST API**: Spring Boot REST service with H2 (dev) and MySQL (prod) support
 - **JavaFX Client**: Modern GUI for schedule generation and visualization
 - **Multithreaded Search**: Parallel combinatorial search with pruning
 - **Database Migrations**: Flyway for schema management
+
+## Feature Showcase
+
+### 1. Exclusion Constraints (Hard Constraints)
+Users can interactively define time blocks to exclude. The system prunes invalid branches immediately.
+
+| **Constraint Entry** | **Interactive Filter** |
+|:---:|:---:|
+| <img src="docs/images/InteractiveExclusionConfiguration.png" width="400"> | <img src="docs/images/IntegrationofExclusionConstraints.png" width="400"> |
+
+### 2. Preference Optimization (Soft Constraints)
+Comparison of default scheduling vs. preference-based scheduling.
+
+| **Default (Earliest Possible)** | **Optimized (After 11am)** |
+|:---:|:---:|
+| <img src="docs/images/BaselineScheduling(DefaultState).png" width="400"> | <img src="docs/images/OptimizationviaSoftConstraints.png" width="400"> |
+| *System defaults to 9:00 AM start* | *System prioritizes 11:00 AM start (Score: 100.3)* |
+
+### 3. Calendar Export
+Full interoperability workflow.
+
+| **Export Action** | **System Save Dialog** | **macOS Calendar Result** |
+|:---:|:---:|:---:|
+| <img src="docs/images/ScheduleSelectionandExportTrigger.png" width="250"> | <img src="docs/images/FileSystemIntegration.png" width="250"> | <img src="docs/images/InteroperabilityVerification.png" width="250"> |
+
+---
 
 ## Prerequisites
 
@@ -118,17 +151,6 @@ The seed script includes:
 - 2 courses: CS101, MATH201
 - 4 sections with various meeting times
 - Building edges with 8-minute walk time
-
-## Next Steps
-
-- [ ] Enhance scoring with travel time via Dijkstra
-- [ ] Add preference-based scoring (time windows, campus preferences)
-- [ ] Implement multithreaded search with ExecutorService
-- [ ] Add JavaFX calendar view with drag-drop
-- [ ] ~~Expand seed data to 10,000+ combinations~~
-- [ ] Add Spotless code formatting
-- [ ] Integration tests for REST endpoints
-- [ ] Performance benchmarks (JMH)
 
 ## Development
 
